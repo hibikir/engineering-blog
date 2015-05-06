@@ -7,13 +7,12 @@ author: "Jorge Montero"
 tags: [implcits, scala, tutorials]
 ---
 
-Implicits are arguably the most unique and misunderstood language of Scala.
+Implicits are arguably the most unique and misunderstood language feature of Scala.
 The tricky part is that unlike other advanced features in the language, they are very hard to avoid:
-Most major libraries in Scala, starting from the collection library, make heavy use of implicits, and that use is not invisible to the users of the library.
-There are many ways to use implicit parameters and implicit conversions, so even for people that have experience using implicits in some cases,
-other patterns of use can be a bit puzzling. Implicits are easy to misuse when building our own libraries too.
+most major libraries in Scala, starting from Scala collections, make heavy use of implicits. That use is not invisible to the users of the library, especially when we choose to look at the code. The other tricky part about implicits is that there are so many ways to use them, each with a different reason and pattern.
+They can't be fully explained in one coherent post.
 
-This is the first in a series of posts describing some of those patterns of use.
+This post explains implicit parameters through one important use pattern. 
 
 The simplest use of implicit parameters out there is probably in Scala reflection.
  ClassTags and TypeTags provide features that are beyond what Java offers. 

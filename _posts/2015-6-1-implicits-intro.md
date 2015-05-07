@@ -98,8 +98,8 @@ Without the implicits, it'd look like:
   val intList = List(3,4,5)
   def getInnerType[T](list:List[T], tag :TypeTag[T]) = tag.tpe.toString
   def gratuitousIntermediateMethod[T](list:List[T], tag :TypeTag[T]) = getInnerType(list,tag)
-  val stringName = gratuitousIntermediateMethod(stringList,typeTag(String)
-  val intName = gratuitousIntermediateMethod(intList,typeTag(Int)
+  val stringName = gratuitousIntermediateMethod(stringList,typeTag(String))
+  val intName = gratuitousIntermediateMethod(intList,typeTag(Int))
   println( s"$stringName, $intName")
 {% endhighlight %}
 

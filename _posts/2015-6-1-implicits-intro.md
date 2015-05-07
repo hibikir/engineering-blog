@@ -24,7 +24,7 @@ So for this first exercise, we'll just write a little method that takes a list, 
  Then we'll print the class name out.
 
 {% highlight scala %}
-import scala.reflect.runtime.universe._
+  import scala.reflect.runtime.universe._
 
   val stringList = List("A")
   val intList = List(3,4,5)
@@ -50,7 +50,7 @@ The context of the call to getInnerType knows that list is a List[String], so th
 So once the compiler does implicit resolution, the code would look like this:
 
 {% highlight scala %}
-val stringList = List("A")
+  val stringList = List("A")
   val intList = List(3,4,5)
   def getInnerType[T](list:List[T])(implicit tag :TypeTag[T]) = tag.tpe.toString
   val stringName = getInnerType(stringList)(typeTag(String))

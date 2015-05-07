@@ -23,7 +23,7 @@ The simplest use of implicit parameters out there is probably in Scala reflectio
 So for this first exercise, we'll see a little method that takes a list, and returns the type name of the contents of the list.
 
 {% highlight scala %}
-import scala.reflect.runtime.universe._
+  import scala.reflect.runtime.universe._
 
   val stringList = List("A")
   val intList = List(3,4,5)
@@ -52,7 +52,7 @@ The context of the call to getInnerType knows that list is a List[String], so th
 So once the compiler does implicit resolution, the code would look like this:
 
 {% highlight scala %}
-val stringList = List("A")
+  val stringList = List("A")
   val intList = List(3,4,5)
   def getInnerType[T](list:List[T])(implicit tag :TypeTag[T]) = tag.tpe.toString
   val stringName = getInnerType(stringList)(typeTag(String))

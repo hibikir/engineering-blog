@@ -28,7 +28,6 @@ So for this exercise, we'll see
 <span class="get-inner-type">a little method</span>
  that takes a List, 
 and returns the <span class="type-name">type name</span> 
-                {{ 'type-name:type name' | classify }}
 of the {{ contents of the list | T }}.
 
 <div class="highlight">
@@ -83,12 +82,9 @@ The compiler is able to pull-from-its-butt a TypeTag in this instance, because
  When getInnerType is invoked, the compiler knows exactly what kind of List the parameter stringList is.
 This would not work if instead of some specific type (String)
  the code calling getInnerType used a generic type, for instance:
-{{ 'dammit' | banana }}  {{'carrot' | carrotpoo }}
 
 {% highlight scala %}
-  import scala.reflect.{{ 'runtime' | banana }}.universe._
-  
-   {{'carrotpoo:carrot' | classify }}
+  import scala.reflect.runtime.universe._
 
   def gratuitousIntermediateMethod[T](list:List[T]) = getInnerType(list)
 {% endhighlight %}

@@ -16,6 +16,9 @@
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ "/css/clean-blog.min.css" | prepend: site.baseurl }}">
+    {% for css_name in page.extra_css %}
+    <link rel="stylesheet" href="/css/{{ css_name }}">
+    {% endfor %}
 
     <!-- Pygments Github CSS -->
     <link rel="stylesheet" href="{{ "/css/syntax.css" | prepend: site.baseurl }}">

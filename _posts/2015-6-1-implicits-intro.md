@@ -5,29 +5,39 @@ subtitle: "An intro to implicit parameters using Scala Reflection as an example"
 header-img: "img/mon-field_rows.jpg"
 author: "Jorge Montero"
 tags: [implicits, scala, tutorials]
+extra_css:
+  - implicits-intro.css
 ---
 
-Implicits are arguably the most unique and misunderstood language feature of Scala.
-The tricky part is that unlike other advanced features in the language, they are very hard to avoid:
+Implicits are arguably <span class="banana">the most</span> unique and misunderstood language feature of Scala.
+Unlike other advanced features in the language, they are very hard to avoid:
 most major libraries in Scala, starting from Scala collections, make heavy use of implicits. That use is not invisible to the users of the library, especially when we choose to look at the code. The other tricky part about implicits is that there are so many ways to use them, each with a different reason and pattern.
 They can't be fully explained in one coherent post.
 
-This post on implicit parameters explains one important use pattern. 
+This post explains one important use pattern on implicit parameters. It's a good place to start
+ for understanding the how and why of Scala implicits.
 
-The simplest use of implicit parameters out there is probably in Scala reflection. Java's reflection provides the .class method on Object, which gives some runtime type information.
- Scala's ClassTags and TypeTags provide features that are beyond what Java offers. 
- The star feature for most people is that TypeTags can give us details about type parameters, at runtime, that
+Reflection lets us ask about type information at runtime.  
+Java provides the .class method on all objects, 
+but it is limited: type parameters are invisible at runtime.
+ Scala's TypeTags can give us details about type parameters that
  the Java compiler would normally erase. 
  And what is the easiest and most common way of obtaining a TypeTag? An implicit parameter.
 
-So for this first exercise, we'll see a little method that takes a list, and returns the type name of the contents of the list.
+So for this exercise, we'll see 
+<span class="get-inner-type">a little method</span>
+ that takes a List, 
+and returns the <span class="type-name">type name</span> 
+                {{ 'type-name:type name' | classify }}
+of the {{ contents of the list | T }}.
 
-{% highlight scala %}
-  import scala.reflect.runtime.universe._
+<div class="highlight">
+<pre>
+import scala.reflect.runtime.universe._
 
-  def getInnerType[T](list:List[T])(implicit tag :TypeTag[T]) = tag.tpe.toString
-
-{% endhighlight %}
+def <span class="get-inner-type">getInnerType[<span class="T">T</span>]</span>(list:List[<span class="T">T</span>])(implicit tag:TypeTag[<span class="T">T</span>]) = tag.<span class="type-name">tpe.toString</span>
+</pre>
+</div>
 
 Using that method, we can report on the inner type of a list:
 
@@ -73,9 +83,12 @@ The compiler is able to pull-from-its-butt a TypeTag in this instance, because
  When getInnerType is invoked, the compiler knows exactly what kind of List the parameter stringList is.
 This would not work if instead of some specific type (String)
  the code calling getInnerType used a generic type, for instance:
+{{ 'dammit' | banana }}  {{'carrot' | carrotpoo }}
 
 {% highlight scala %}
-  import scala.reflect.runtime.universe._
+  import scala.reflect.{{ 'runtime' | banana }}.universe._
+  
+   {{'carrotpoo:carrot' | classify }}
 
   def gratuitousIntermediateMethod[T](list:List[T]) = getInnerType(list)
 {% endhighlight %}

@@ -1,27 +1,13 @@
-.banana {
-    color: lightgoldenrodyellow;
-}
-
-.codelikethingie {
-    box-sizing: border-box;
-    display: none;
-    font-family: sans-serif;
-    font-size: 10px;
-    height: auto;
-    width: auto;
-    color: red;
-}
-
 .type-name {
 }
 
 .get-inner-type {
-    color: green;
+    color: #FF9C00;
 }
 
-.taggydoober {
-    color: blue;
-}
 .T {
-    color: darkorange;
+    color: #8c14e8;
+}
+.grm {
+    color: #1ab955;
 }

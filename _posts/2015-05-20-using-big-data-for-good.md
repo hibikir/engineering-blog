@@ -1,7 +1,7 @@
 ---
 layout: post
-title: "Is That It?"
-subtitle: "Using Big Data for Social Good"
+title: "Using Big Data for Good"
+subtitle: "Big Data, it's not just for selling ads anymore"
 header-img: "img/mon-ankeny.jpg"
 author: "David Dooling"
 tags: [big data, genomics, IoT, precision farming]
@@ -13,8 +13,8 @@ determining what ads you are most likely to click.  From Facebook to Google to
 Twitter, the modern players in IT collect massive amounts of information on
 their customers and then analyze that data to provide ever more relevant ads.
 As Jeff Hammeracher, formerly of Facebook and now with Cloudera, famously said,
-"The best minds of my generation are thinking about how to make people click
-ads."  The result of this nearly singular focus is that many of the tools
+&ldquo;The best minds of my generation are thinking about how to make people click
+ads.&rdquo;  The result of this nearly singular focus is that many of the tools
 developed to operate in the Big Data space aren't easily applied to systems
 that are much more complicated than counting words and providing links to ads.
 As anyone who has tried to use NoSQL databases for complicated work flows on
@@ -74,22 +74,33 @@ the environment in which a plant grows.
 
 ![Cost of DNA Sequencing over time](https://www.genome.gov/images/content/cost_megabase_.jpg)
 
-At Monsanto, we are in a unique position to use directed Big Data experiments
-on a large scale.  We can combine plant and microbial genomics, soil science,
-and weather models informed by data collected from Internet-connected planters,
-sensors, and combines into our IoT platform to make significant improvements in
-our understanding of how to create healthier plants and more optimal yields.
-We call this effort "unlocking digital yield" and it provides the basis of how
-we intend to meet the needs of an ever hungrier planet.  Executing these
-experiments requires expertise across science, statistics, and IT, both
-software and hardware.  Working in close collaboration with a variety of
-experts across all these fields is one of the great things about working in IT
-at Monsanto.
+At Monsanto, we are in a unique position to use directed Big Data
+experiments on a large scale.  We can combine plant and microbial
+genomics, soil science, and weather models informed by data collected
+from Internet-connected planters, sensors, and combines into our IoT
+platform to make significant improvements in our understanding of how
+to create healthier plants and more optimal yields.  We call this
+effort &ldquo;unlocking digital yield&rdquo; and it provides the basis
+of how we intend to meet the needs of an ever hungrier planet.
+Executing these experiments requires expertise across science,
+statistics, and IT, both software and hardware.  We'll be writing more
+detailed posts about our approach in these areas soon, but until then
+here are some slides from a talk Rob Long, one of our Data Architects,
+gave at [StampedeCon](http://stampedecon.com/) 2014 about how we use
+[HBase](http://hbase.apache.org/) and
+[Solr](http://lucene.apache.org/solr/) to analyze our large genomics
+data sets.
 
-Despite the prevailing notions in the popular press, there are a lot of great
-opportunities in Big Data beyond just selling ads.  There are complicated
-problems that not only do we not have the answers for, we are still trying to
-figure out what the solutions will look like.  And when you couple that with
-solving real-world problems that affects tens millions of people like cancer,
-or hundreds of millions of people like producing safe, abundant food, working
-on Big Data can mean a lot more than just a big paycheck.
+<iframe src="//www.slideshare.net/slideshow/embed_code/key/15WPnDtRZ1wquL" width="595" height="485" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px; margin-bottom:5px; max-width: 100%;" allowfullscreen> </iframe> <div style="margin-bottom:5px"> <strong> <a href="//www.slideshare.net/StampedeCon/managing-genomes-at-scale-what-we-learned-stampedecon-2014" title="Managing Genomes At Scale: What We Learned - StampedeCon 2014" target="_blank">Managing Genomes At Scale: What We Learned - StampedeCon 2014</a> </strong> from <strong><a href="//www.slideshare.net/StampedeCon" target="_blank">StampedeCon</a></strong> </div>
+
+Despite the prevailing notions in the popular press, there are a lot
+of great opportunities in Big Data beyond just selling ads.  There are
+complicated problems that not only do we not have the answers for, we
+are still trying to figure out what the solutions will look like.
+Solving these problems requires a diverse set of skills, and working
+in close collaboration with a variety of experts is one of the great
+things about working in IT at Monsanto.  When you couple that with
+solving real-world problems that affect tens of millions of people
+like cancer, or hundreds of millions of people like producing safe,
+abundant food, working on Big Data can mean a lot more than just
+getting a big paycheck.

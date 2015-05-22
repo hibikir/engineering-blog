@@ -1,4 +1,4 @@
-module Jekyll
+module Jessitron
   module SpanWithClass
     def sc(input, second_arg)
       "<span class=\"#{second_arg}\">#{input}</span>"
@@ -6,4 +6,4 @@ module Jekyll
   end
 end
 
-Liquid::Template.register_filter(Jekyll::SpanWithClass)
+Liquid::Template.register_filter(Jessitron::SpanWithClass)

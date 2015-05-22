@@ -21,8 +21,8 @@ If you need to parse through some JSON data at the command line, [`jq`](http://s
 `jq` is its own programming language. There are tons of examples of how to use `jq` to extract data from JSON; 
 this post shows how we use it to modify JSON.
 
-Amazon Cloud Formation turns a JSON stack definition (plus a JSON configuration file)
- into a whole interconnected bunch of AWS resources. I frequently want to update my configuration. 
+[AWS CloudFormation](http://aws.amazon.com/cloudformation/) turns a JSON stack definition (plus a JSON configuration file)
+into a whole interconnected bunch of AWS resources. I frequently want to update my configuration. 
 Using `jq`, I can do this from the command line. That means I can script it for automated tests.
 
 The configuration file looks like this:
@@ -33,9 +33,9 @@ The configuration file looks like this:
   "ParameterValue": "&lt;changeMe&gt;"
  }, 
  {
+  "ParameterKey": "DockerInstanceType",
   "ParameterValue": "m3.medium"
- }]
-
+}]
 </code></pre></div>
 
 The JSON is an array of objects, each with ParameterKey and ParameterValue. I want to change the ParameterValue for {{ "a particular ParameterKey" | sc: "projectKey" }}. Here's the syntax:
@@ -47,14 +47,12 @@ The JSON is an array of objects, each with ParameterKey and ParameterValue. I wa
           else {{"."|sc:"dot"}}
           end
          )' > populated_config.json
-
 </code></pre></div>
 
 This says, "{{ "For each object in the array" | sc: "map" }}:
- check if ParameterKey is "{{"Project"|sc:"projectKey"}}". If so,
+check if ParameterKey is "{{"Project"|sc:"projectKey"}}". If so,
 {{"combine"|sc:"plus"}} {{ "that object"|sc:"dot"}}
- with {{"this other one"|sc:"newValue"}} (right-hand-side values win, so my ParameterValue overrides the existing one). If not, leave {{"the object"|sc:"dot"}}
-alone." 
+with {{"this other one"|sc:"newValue"}} (right-hand-side values win, so my ParameterValue overrides the existing one). If not, leave {{"the object"|sc:"dot"}} alone." 
 The output file now contains
 
 <div class="highlight"><pre><code class="language-bash" data-lang="bash">[{
@@ -64,7 +62,7 @@ The output file now contains
  {
    "ParameterKey": "DockerInstanceType",
    "ParameterValue": "m3.medium"
- }]
+}]
 </code></pre></div>
 
 Hooray! The `jq` {{"map"|sc:"map"}} function, combined with a conditional, let me change a particular value.
@@ -75,9 +73,8 @@ Since I do this often, and I'm on a Mac, I made a crude bash function and threw 
   jq "{{"map"|sc:"map"}}(if .ParameterKey == \"{{"$1"|sc:"projectKey"}}\" 
           then . + {\"ParameterValue\":\"{{"$2"|sc:"newValue"}}"} 
           else . 
-          end)";
- }
-
+          end)"
+}
 </code></pre></div>
 
 Now I can say
@@ -91,7 +88,7 @@ Piping to the `populate-config` function over and over lets me change multiple v
 
 CAUTION:
 
-The `jq` {{"map"|sc:"map"}} function works on arrays. It's easy in this config file, because the JSON happens to be an array. If I'm instead changing a value within an object, such as:
+The `jq` {{"map"|sc:"map"}} function works on arrays. It's easy in this config file, because the JSON happens to be an array. If instead I'm changing a value within an object, such as:
 
 <div class="highlight"><pre><code class="language-bash" data-lang="bash">{
   "{{"honesty"|sc:"projectKey"}}": "Apple Jack",

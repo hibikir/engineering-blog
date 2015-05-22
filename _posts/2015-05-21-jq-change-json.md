@@ -1,51 +1,100 @@
-If you need to parse through some JSON data at the command line, jq is here for you.
-jq is its own programming language. There are tons of examples of how to use jq to extract data from JSON; 
+---
+layout: post
+title: "Modifying JSON on the command line"
+subtitle: "Using jq to change a value"
+header-img: "img/mon-field_rows.jpg"
+author: "Jessica Kerr"
+tags: [jq, json, aws, tutorials]
+---
+
+<style scoped>
+  .projectKey { color: red }
+  .map { color: orange }
+  .plus { color: brown }
+  .newValue { color: blue }
+  .dot { color: hotpink  }
+</style>
+
+If you need to parse through some JSON data at the command line, [`jq`](http://stedolan.github.io/jq/) is here for you.
+`jq` is its own programming language. There are tons of examples of how to use `jq` to extract data from JSON; 
 this post shows how we use it to modify JSON.
 
 Amazon Cloud Formation turns a JSON stack definition (plus a JSON configuration file)
  into a whole interconnected bunch of AWS resources. I frequently want to update my configuration. 
-Using jq, I can do this from the command line. That means I can script it for automated tests.
+Using `jq`, I can do this from the command line. That means I can script it for automated tests.
 
-The ACF configuration file looks like this:
+The configuration file looks like this:
 
-    [{
-       "ParameterKey": "Project",
-       "ParameterValue": "<changeMe>"
-     }, {
-       "ParameterKey": "DockerInstanceType",
-       "ParameterValue": "m3.medium"
-     }]
 
-The JSON is an array of objects, each with ParameterKey and ParameterValue. I want to change the ParameterValue for a particular ParameterKey. Here's the jq):
+<div class="highlight"><pre><code class="language-json" data-lang="json">
+[{
+  "ParameterKey": "{{ "Project" | sc: "projectKey" }}",
+  "ParameterValue": "&lt;changeMe&gt;"
+ }, 
+ {
+  "ParameterValue": "m3.medium"
+ }]
 
-    cat config.json | jq 'map(if .ParameterKey == "Project" then . + {"ParameterValue":"jess-project"} else . end) > populated_config.json'
+</code></pre></div>
 
-This says, "For each object in the array: check if ParameterKey is "Project". If so, combine that object with this other one (right-hand-side values win, so my ParameterValue overrides the existing one). If not, leave the object alone." Here, "." means "that thing you have."
+The JSON is an array of objects, each with ParameterKey and ParameterValue. I want to change the ParameterValue for {{ "a particular ParameterKey" | sc: "projectKey" }}. Here's the syntax:
+
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">
+cat config.json | 
+  jq '{{ "map" | sc: "map" }}(if .ParameterKey == "{{ "Project" | sc: "projectKey" }}"
+          then {{"."|sc:"dot"}} {{"+"|sc:"plus"}} <span class="newValue">{"ParameterValue"="jess-project"}</span>
+          else {{"."|sc:"dot"}}
+          end
+         )' > populated_config.json
+
+</code></pre></div>
+
+This says, "{{ "For each object in the array" | sc: "map" }}:
+ check if ParameterKey is "{{"Project"|sc:"projectKey"}}". If so,
+{{"combine"|sc:"plus"}} {{ "that object"|sc:"dot"}}
+ with {{"this other one"|sc:"newValue"}} (right-hand-side values win, so my ParameterValue overrides the existing one). If not, leave {{"the object"|sc:"dot"}}
+alone." 
 The output file now contains
 
-    [{
-       "ParameterKey": "Project",
-       "ParameterValue": "jess-project"
-     }, {
-       "ParameterKey": "DockerInstanceType",
-       "ParameterValue": "m3.medium"
-     }]
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">
+[{
+   "ParameterKey": "{{"Project"|sc:"projectKey"}}",
+   "ParameterValue": "{{"jess-project"|sc:"newValue"}}"
+ },
+ {
+   "ParameterKey": "DockerInstanceType",
+   "ParameterValue": "m3.medium"
+ }]
+</code></pre></div>
 
-Hooray! The jq map function, combined with a conditional, let me change a particular value.
+Hooray! The `jq` {{"map"|sc:"map"}} function, combined with a conditional, let me change a particular value.
 
-Since I do this often, I made a crude bash function and threw it in my .bash_profile so it will always be available:
+Since I do this often, and I'm on a Mac, I made a crude bash function and threw it in my [.bash_profile](http://web.physics.ucsb.edu/~pcs/apps/bash/intro-bash.html) so it will always be available:
 
-    function populate-config() { jq "map(if .ParameterKey == \"$1\" then . + {\"ParameterValue\":\"$2\"} else . end)"; }
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">
+function populate-config() { 
+  jq "{{"map"|sc:"map"}}(if .ParameterKey == \"{{"$1"|sc:"projectKey"}}\" 
+          then . + {\"ParameterValue\":\"{{"$2"|sc:"newValue"}}"} 
+          else . 
+          end)";
+ }
+
+</code></pre></div>
 
 Now I can say
 
-    cat config.json | populate-config Project jess-project | populate-config DockerInstanceType t2.micro > populated_config.json
+<div class="highlight"><pre><code class="language-bash" data-lang="bash">
+cat config.json | 
+  populate-config {{ "Project" | sc: "projectKey" }} {{"jess-project"|sc:"newValue"}} |
+  populate-config {{"DockerInstanceType"|sc:"projectKey"}} {{"t2.micro"|sc:"newValue"}} > populated_config.json
+</code></pre></div>
 
-Note that using the populate-config function over and over in the same pipe lets me change multiple values.
+Piping to the `populate-config` function over and over lets me change multiple values.
 
 CAUTION:
 
-The jq map function works on arrays. It's easy here, because the JSON happens to be an array. If I'm instead changing a value within an object, such as:
+The jq map function works on arrays. It's easy in this config file, because the JSON happens to be an array. If I'm instead changing a value within an object, such as:
 
     {
       "honesty": "Apple Jack",

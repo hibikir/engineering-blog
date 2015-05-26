@@ -17,7 +17,7 @@ description: "We produce code that powers agricultural products that support far
     <p class="post-meta">Posted by {% if post.author %}{{ post.author }}{% else %}{{ site.title }}{% endif %} on {{ post.date | date: "%B %-d, %Y" }}</p>
 </div>
 
-{% if forloop.last != true %}
+{% if forloop.last != true or paginator.total_pages > 1 %}
 <hr>
 {% endif %}
 {% endfor %}

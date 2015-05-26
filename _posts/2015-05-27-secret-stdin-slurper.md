@@ -9,8 +9,8 @@ tags: [bash, sysadmin, tutorials]
 
 [BASH](http://www.gnu.org/software/bash/) may be looked down upon by
 all the programming language hipsters out there, but when you are
-doing system level tasks it can be quite convenient: it's on every
-system, it has no other dependencies, and it can be a powerful
+doing system-level tasks it can be quite convenient: it's on every
+system, it has no dependencies to install, and it can be a powerful
 language when used properly.
 
 ## The Setup
@@ -47,10 +47,11 @@ into your scheduler.
 As a first pass, we decided to have the helper BASH script we use to
 spin up and manage state of our CloudFormation stacks simply wait for
 the stack creation to complete and then issue fleet commands via SSH.
-We created a file that contained the list of unit files we wanted the
-script to spin up alongside the template used to create the stack.  So
-if our template is called `vpc-default.json`, then we would create a
-file called `vpc-default.services` with contents something like this:
+Alongside the template used to create the stack, we created a file
+that contained the list of unit files we wanted the script to spin up.
+So if our template is called `vpc-default.json`, then we would create
+a file called `vpc-default.services` with contents something like
+this:
 
 ```
 kibana
@@ -59,9 +60,8 @@ reaper
 ```
 
 After the stack creation was complete, the script would read this file
-and issue the appropriate fleet command over SSH on one of the nodes
+and issue the appropriate fleet commands over SSH on one of the nodes
 in the fleet cluster.
-
 
 ## The Problem
 
@@ -104,8 +104,8 @@ The loop only executes one time instead of three!?!  What is going on?
 Why is the loop terminating early and/or what happens to the second
 and third line of the file?
 
-Let's simplify the script.  Let's just echo the each line as we read
-it:
+To try to figure this out, let's simplify the script.  Let's just echo
+the each line as we read it:
 
 {% highlight bash %}
 services_file="vpc-default.services"
@@ -122,11 +122,15 @@ service:route-updater
 service:reaper
 ```
 
-as expected.  Something must be going wrong inside our loop, but what
-could it be?  The reason I am writing this post is because I have run
-into this problem several times over the years and every time I stare
-blankly at the screen until I remember: SSH is slurping up my
-`STDIN`.  We can test this by using another `STDIN` slurper, `cat`.
+as expected.  Something must be going wrong inside our original loop,
+but what could it be?  We know running `echo` is OK, so the problem
+must be with the SSH fleet commands.  Somehow, they are causing the
+loop to exit without processing the last two lines of the file.  So
+either they are making reading the second line evaluate to false,
+which seems unlikely, or those commands are somehow consuming the
+contents of `STDIN` themselves.  We can see if the latter is a possibility
+by replacing the SSH commands with a simpler command that consumes
+`STDIN`, `cat`:
 
 {% highlight bash %}
 services_file="vpc-default.services"
@@ -147,11 +151,32 @@ reaper
 Ah-ha! The `while` loop `read` gobbles up the the first line of the
 file, but then the `cat` within the loop consumes the rest of the file
 and the next time through the loop, `read` returns false and the
-script moves along.  The same thing happens with SSH.  Since SSH
-connects the `STDIN` of the calling process to the `STDIN` of the
+script moves along.  But does the same thing happens with SSH?  We can
+try that too:
+
+{% highlight bash %}
+services_file="vpc-default.services"
+while read service; do
+    echo "ssh service:$service"
+    ssh service cat
+done < "$services_file"
+{% endhighlight %}
+
+Running this outputs:
+
+```
+ssh service:kibana
+route-updater
+reaper
+```
+
+So SSH is indeed consuming the contents of `STDIN`.  How?  Basically,
+SSH connects the `STDIN` of the calling process to the `STDIN` of the
 process on the remote machine so you can do cool things like pipe
-stuff over SSH, lines two through the end of the file get lost
-somewhere on the other machine.
+stuff over SSH.  If the remote process does something with `STDIN`,
+like `cat` above, great.  If it just ignores `STDIN` like the fleet
+commands, then lines two through the end of the file get lost
+somewhere on the remote machine.
 
 ## The Solution
 

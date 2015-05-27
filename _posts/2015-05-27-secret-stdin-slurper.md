@@ -4,7 +4,7 @@ title: "Secret STDIN Slurper"
 subtitle: "The dangers of using STDIN to drive a BASH loop"
 header-img: "img/mon-city_garden.jpg"
 author: "David Dooling"
-tags: [bash, sysadmin, tutorials]
+tags: [bash, sysadmin, puzzlers]
 ---
 
 [BASH](http://www.gnu.org/software/bash/) may be looked down upon by

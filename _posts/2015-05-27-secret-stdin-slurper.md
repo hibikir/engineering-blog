@@ -31,7 +31,7 @@ of the Auto Scaling group's Launch Configuration in
 [cloud-config](https://coreos.com/docs/cluster-management/setup/cloudinit-cloud-config/)
 format.
 
-Things are a bit more tricky if you only want run a container on a
+Things are a bit trickier if you only want to run a container on a
 subset of the instances.  You would typically do this with a scheduler
 like
 [fleet](https://coreos.com/docs/launching-containers/launching/launching-containers-fleet/)

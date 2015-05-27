@@ -216,4 +216,5 @@ successfully launched service: reaper
 Then, fleet will make sure your services are running and all is right
 with the world.  What happens if you need to read a very large file
 where the act of doing so will cause harm to the normal operations of
-your computer?  That's left as an exercise for the reader.
+your computer?  You may want to investigate the SSH `-n` command line
+option.

@@ -8,12 +8,9 @@ tags: [implicits, scala, tutorials]
 extra_css:
   - implicits-intro.css
 ---
-Insert link to the previous post here
-
-Another big user of implicits that every Scala developer is bound to find is Scala's concurrency library. Whether we need to design
-asychronous operations ourselves, or we are just using libraries to call a web service, or perform database operations, Scala concurrency
-is there, and we will have to understand at least one little bit: Futures.
-
+Last time, we looked at implicit parameters and type tags. Now, we'll take a look at another use of implicit parameters that every Scala
+programmer sees: The scala concurrency library, and specifically, Futures.
+ 
 There is much to say about futures. There are entire series of articles around them, so I will not explain them deeply. The gist of it is that
 a Future holds a computation being done asynchronously. Among other things,futures let us define operations that should be performed on the result, handle errors,
 and ultimately, wait for the operation to complete.
@@ -35,6 +32,8 @@ trait EmployeeGrabberBabber{
   def employee(id:Long)(implicit e:ExecutionContext) :Future[Employee]
   def role(employee:Employee)(implicit e:ExecutionContext) : Future[Long]
 }
+
+I have an implementation for that trait, but it's not really that important. you can find it here:
 
 The first two methods do synchronous IO: Whenever we call them, our thread will patiently wait until we get the requested information, leaving our thread blocked
 The second pair use Futures: employee returns a Future[Employee], that will eventually become an Employee, or error out. We do not wait for the operation to complete though.

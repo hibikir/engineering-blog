@@ -8,19 +8,18 @@ tags: [implicits, scala, tutorials]
 extra_css:
   - implicits-intro.css
 ---
+Implicits are difficult to understand because they have many different uses.
 Last time, we looked at implicit parameters and type tags. Now, we'll take a look at another use of implicit parameters that every Scala
-programmer sees: The scala concurrency library, and specifically, Futures.
+programmer sees: implicits as an alternative to passing the same argument over and over. Scala Futures use implicit parameters in this way.
  
-There is much to say about futures. There are entire series of articles around them, so I will not explain them deeply. The gist of it is that
-a Future holds a computation being done asynchronously. Among other things,futures let us define operations that should be performed on the result, handle errors,
-and ultimately, wait for the operation to complete.
+There is [much](http://danielwestheide.com/blog/2013/01/09/the-neophytes-guide-to-scala-part-8-welcome-to-the-future.html) to say about [futures](http://docs.scala-lang.org/overviews/core/futures.html); here, 
+I will not explain them deeply. The gist of it is that
+a Future represents a value that may or may not have been computed yet. Futures let us spin off work into other threads, then add more operations that should be performed on the result, define what should happen after failure, and (if we really must) wait for the operation to complete.
 
-Sources:
+Everything we do asynchronously happens on some thread. Creating a future, adding operations after success, adding failure handling -- in each case, we need to tell it what thread to run on. 
+Implicits are handy in cases like this.
 
-Very technical: http://docs.scala-lang.org/overviews/core/futures.html
-Not so technical but cool: http://danielwestheide.com/blog/2013/01/09/the-neophytes-guide-to-scala-part-8-welcome-to-the-future.html
-
-For instance, let's define some fake Data Access Object with the following operations
+For illustration, let's define some fake Data Access Object with the following operations:
 
 case class Employee(id:Long, name:String)
 case class Role(name:String,department:String)
@@ -33,10 +32,10 @@ trait EmployeeGrabberBabber{
   def role(employee:Employee)(implicit e:ExecutionContext) : Future[Long]
 }
 
-I have an implementation for that trait, but it's not really that important. you can find it here:
+I have an implementation for that trait, but it's not really that important. you can find it hereLINK.
 
-The first two methods do synchronous IO: Whenever we call them, our thread will patiently wait until we get the requested information, leaving our thread blocked
-The second pair use Futures: employee returns a Future[Employee], that will eventually become an Employee, or error out. We do not wait for the operation to complete though.
+The first two methods do synchronous IO: Whenever we call them, our thread will patiently wait until we get the requested information, leaving our thread blocked.
+The second pair use Futures: employee returns a Future[Employee], that will eventually become an Employee, or error out. We do not wait for the operation to complete before returning; the caller gets the power of deciding whether to wait, whether to attach more actions or error handling.
 
 with the first set of methods, if we wanted to get an Employee, and then get their Role, and then print it out, we'd do something like:
 
@@ -44,9 +43,9 @@ with the first set of methods, if we wanted to get an Employee, and then get the
   val role = grabber.rawRole(employee)
   val bigEmployee = EmployeeWithRole(employee.id,employee.name,role)
 
-which will be holding up our thread until the entire calculation is made. callers better be careful!
+This is procedural programming. It holds up the calling thread until the entire calculation is made. Be careful about doing this in a web application or an event thread in a native UI toolkit.
 
-The asynchronous methods return instantly, and we can do operations with them, for instance
+The asynchronous methods return instantly, and we can keep right on defining what to do with the value once the Future has it.
 
 val role :Future[Role] = grabber.employee(200L).flatMap(e => grabber.role(e)) 
 

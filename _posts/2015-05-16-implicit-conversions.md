@@ -48,6 +48,55 @@ to make it match. The scoping of what you can put in implicit parameters is comp
 
 StringOps extends StringLike, so we can call all it's methods on a string without having to do any manual wrapper. Convenient.
 
-The problem with this is that it's easy to abuse, and cause trouble with. Conversions have to be put in scope, just like any
-other implicit, and then programmers have to know those conversions are available. Add too many of them, or make them
-unnatural, and they increase the difficulty of working with your code more than they actually help.
+All this power comes with downsides. Conversions have to be put in scope, just like any
+other implicit, and programmers have to know those conversions are available. Too many custom conversions make code harder to learn.
+Another problem comes from using very wide conversions. Let's say that somewhere we defined classes that take a lot of options:
+
+case class Something(name:Option[String], age:Option[Int], phoneNumber:Option[String])
+
+If we always have the data, those Options are just noise, so anyone that just learned implicit conversions would write something like this!
+
+implicit def optionify[T](t:T):Option[T] = Option(t)
+
+Which lets us make this call work
+
+val name = "Bob"
+val age = 48
+val phone = "(888)-444-3333"
+
+val a = Something(name,age,phone)
+
+Sounds great, right? We never have to wrap any values anymore! What's the worst that could happen?
+
+Wherever that implicit is in scope, any syntax error that could be fixed by wrapping anything into an option will try to
+be fixed that way, whether it makes sense or not.
+
+val aList = ("a","b","c")
+val anInt = 42
+val something = Something("Bob",48,"(888)-444-3333")
+
+aList.isEmpty
+anInt.isEmpty
+something.isEmpty
+
+Only List has an isEmpty method, but the implicit conversion makes the other two work! That's not what we wanted with our
+implicit conversion, but if we want that functionality, we have to keep this one too. Add a few more implicits like that
+to the same scope, and suddenly you might as well be working in a language without types: The compiler stops being useful.
+
+If we want to use this kind of implicit conversion responsibly, we have to add the implicits very explicitly, just for the
+code than needs them
+
+object AutoOption {
+  implicit def optionify[T](t:T):Option[T] = Option(t)
+}
+  
+class PutsThingsIntoOptionsAllTheTime{
+  import AutoOption._
+  
+  ... put code that uses the implicit conversion here
+  
+}
+
+There are two main cases where implicit conversions are relatively safe and unsurprising: When adding new functionality to a class,
+and when trying to convert a class we cannot control to a subclass of another class we do control. Anything else is probably going
+to be confusing.

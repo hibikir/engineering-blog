@@ -35,43 +35,39 @@ Except java.lang.String does not have a capitalize method! What sorcery is this?
 
 As IntelliJ tells us, the capitalize method is a part of [StringLike](https://github.com/scala/scala/blob/6ca8847eb5891fa610136c2c041cbad1298fb89c/src/library/scala/collection/immutable/StringLike.scala#L141).
 
-    trait StringLike[+Repr] extends Any with scala.collection.IndexedSeqOptimized[Char, Repr]
-     with Ordered[String] {
-        def capitalize : scala.Predef.String
-
+   
 (where scala.Predef.String is an alias for java.lang.String. <- maybe footnote this?) 
 Somehow our String got converted into a StringLike, to call capitalize. But we didn't do anything!
 
-Scala automatically imports a few things for you into all the files; one of these is scala.Predef.
-Predef has a whole lot of things in there; this one is relevant right now:
+Scala automatically imports `scala.Predef` everywhere. Among many other things, Predef contains:
 
     implicit def augmentString(x : scala.Predef.String) : scala.collection.immutable.StringOps
 
-StringOps is in [the scala source](https://github.com/scala/scala/blob/6ca8847eb5891fa610136c2c041cbad1298fb89c/src/library/scala/collection/immutable/StringOps.scala#L29)
-, where we find out it's extends StringLike
+[StringOps](https://github.com/scala/scala/blob/6ca8847eb5891fa610136c2c041cbad1298fb89c/src/library/scala/collection/immutable/StringOps.scala#L29)
+has the StringLike trait which includes the capitalize method.   
 
-    final class StringOps(override val repr: String) extends AnyVal with StringLike[String] {
+So what does that `implicit def` mean?
 
-So what does that implicit def mean?
+Any time a parameter doesn't match the expected type, or we try to call a method that doesn't exist,
+ the compiler attempts to use a view to make it match.
+A view is a single parameter function, declared with the implicit keyword in front of it. The implicit keyword tells the compiler
+that as long as the function is in scope, the compiler can use it automatically.
 
-An implicit conversion is a single parameter function, declared with the implicit keyword in front of it.
-At any time a parameter or a method or an object of a method call would not compile as written,
- the compiler will attempt to use any implicit conversions
-to make it match. The scoping of what you can put in implicit parameters is complicated. <- what? what is this sentence?
+It's almost as if Scala added methods without changing java.lang.String. No manual wrapping: it's almost invisible[1]. Sounds convenient!
 
-StringOps extends StringLike, so we can call all its methods on a string without having to do any manual wrapping. Convenient!
-
-All this power comes with downsides. Conversions have to be put in scope, just like any
-other implicit, and programmers have to know those conversions are available. Too many custom conversions make code harder to learn.
-Another problem comes from using very wide conversions. Let's say that somewhere we defined classes that take a lot of options:
+All this power comes with downsides. If a programmer is not familiar with all the views in scope, the code is harder to learn.
+There's also the temptation to define very wide conversions. Everyone does it, and later regrets it.
+Let's say that some classes that take a lot of Options:
 
     case class Octopus(name:Option[String], tentacles:Option[Int], phoneNumber:Option[String])
+    
+    val a = Octopus(Some(name),Some(tentacles),Some(phone))
 
-If we always have the data, those Options are just noise, so a person who recently learned implicit conversions could write something like this!
+If we always have the data, those Options are just noise, so someone who recently learned views could write something like this:
 
     implicit def optionify[T](t:T):Option[T] = Option(t)
 
-Which lets us make this call work:
+Which lets this call work:
 
     val name = "Angry Bob"
     val tentacles = 7
@@ -81,8 +77,8 @@ Which lets us make this call work:
 
 Sounds great, right? We never have to wrap any values anymore! What's the worst that could happen?
 
-Wherever that implicit is in scope, any syntax error that could be fixed by wrapping anything into an option will try to
-be fixed that way, whether it makes sense or not.
+Wherever that implicit is in scope, any syntax error that could be fixed by wrapping anything into an Option will be 
+"fixed" that way, whether it makes sense or not.
 
     val aList = ("a","b","c")
     val anInt = 42
@@ -92,12 +88,13 @@ be fixed that way, whether it makes sense or not.
     anInt.isEmpty
     something.isEmpty
 
-Only List has an isEmpty method, but the implicit conversion makes the other two work! That's not what we wanted with our
-implicit conversion, but there it is. Add a few more implicits like that
-to the same scope, and suddenly you might as well be working in a language without types: The compiler stops being useful.
+List and Option define `isEmpty`. If you think you have a List, but you really have an Octopus, 
+the compiler will use your view, give you an Option[Octopus], and isEmpty will compile! That's not what we wanted when we defined our view,
+but there it is. Add a few more implicits like that to the same scope, and suddenly you might as well be working in a language without types:
+ the compiler stops being useful.
 
-If we want to use this kind of implicit conversion responsibly, we have to add the implicits very carefully, just for the
-code than needs them
+To use this view responsibly,  add it to the scope very carefully, just for the
+code than needs it:
 
     object AutoOption {
       implicit def optionify[T](t:T):Option[T] = Option(t)
@@ -106,38 +103,79 @@ code than needs them
     class PutsThingsIntoOptionsAllTheTime{
       import AutoOption._
   
-      ... put code that uses the implicit conversion here _
+      ... put code that uses the implicit conversion here ...
   
     }
     
-In general, views that convert anything to anything, or those that unexpectedly change the types of the class they extend,
-will be confusing. An example of this that caused a lot of grief to scala programmers everywhere is how
-scala automatically converts anything to a string when using + :
+In general, views that accept any type will be confusing. For example, Scala lets you call + on anything, as :
 
-  implicit final class any2stringadd[A](private val self: A) extends AnyVal {
-    def +(other: String): String = String.valueOf(self) + other
-  }
+    implicit final class any2stringadd[A](private val self: A) extends AnyVal {
+      def +(other: String): String = String.valueOf(self) + other
+    }
   
  So this gives every class a + method that lets it concatenate to a String.
- 
+
+     Set("1","2","3") + "a gazebo" returns Set("1","2","3","a gazebo")
     Set(1,2,3) + "a gazebo" returns "Set(1, 2, 3)a gazebo"
     "a gazebo" + Set(1,2,3) returns a "gazeboSet(1, 2, 3)"
-    Set("1","2","3") + "a gazebo" returns Set("1","2","3","a gazebo")
+    Set[Any]1,2,3) + "a gazebo" returns Set(1,2,3,"a gazebo")
 
-Those are pretty predictable, and not all that confusing. But then we have this [scala puzzler](http://scalapuzzlers.com/#pzzlr-040)
+If this isn't crazy enough for you, check out this [scala puzzler](http://scalapuzzlers.com/#pzzlr-040).
 
-    List("1","2","3").toSet() + "a gazebo" returns falsea gazebo!
+This has annoyed Scala developers enough that there are plans to remove it in
+a future version of Scala. If the language authors create troublesome views, the rest of us should take warning.
 
-the parenthesis after toSet call a separate method than toSet, which returns false, so false + "a gazebo" is what we get.
-And unlike our Option[T] implicit defined above, this one in every scala file you use.
-
-
-There are two main cases where views are relatively safe and unsurprising:
-
-1) When adding new functionality to a class, like with "fluttershy".capitalize. Notice, in the code above, how careful de library devs were
+Despite the possible surprises confusion, views are invaluable as a way to extend
+ class functionality while still maintaining a strong type system, or requiring explicit wrapping.
+This post illustrates one way to use vies safely: Adding new functionality to a class, like with "fluttershy".capitalize.
+   Notice, in the code above, how careful de library devs were
 to make sure capitalize returns the type we started with. By not changing the return type, calling the method does not surprise us.
 
-2)when trying to convert a class we cannot control to a subclass of another class we do control. 
+ trait StringLike {
+        def capitalize : scala.Predef.String
+}
 
-Anything else is probably going to be confusing.
+As long as we are only adding functionality to a class, and our new methods do not have surprising return types, implicit
+conversions are a successful.
 
+
+Implicit conversions are invisible to the programmer, except
+IntelliJ underlines the code when a view is used.
+
+![IntelliJ helps see implicits](/img/IntelliJUnderlinesImplicits.png)
+
+The 42 is underlined because Scala is converted a Scala int to a java int using a view, also defined in Predef
+
+
+//this is another pos
+
+2)when trying to convert a class we cannot control to a subclass of another class we do control. For instance. Imagine that
+we have a small crass hierarchy:
+
+trait fruit{
+    def vitamins: Set(String)
+    def color: String
+}
+
+final class StringOps(override val repr: String) extends AnyVal with StringLike[String] {
+
+
+object Banana(val vitamins: Set("B6","C"),val color("Yellow")) extends Fruit
+object GrannySmithApple(val vitamins: Set("C"),val color("Green")) extends Fruit
+
+and then we are using a library that has a Tomato:
+
+class Tomato(val variety:String,val color:String) {
+
+val vitamins: List("C","K","B6","E")
+)
+
+Whoever wrote that class did not realize that a Tomato is a Fruit! In Java, we'd build a TomatoWrapper. In scala, we can write
+an implicit conversion:
+
+implicit def TomatoIsAFruit(t:Tomato) = new Tomato extends Fruit{val vitamins = t.vitamins.toSet; val color = t.color}
+
+A Tomato is still a tomato, 
+
+
+Any other uses are probably dangerous.

@@ -128,11 +128,11 @@ a future version of Scala. If the language authors create troublesome views, the
 We should aim to have the seamlessness of capitalize in our own view. An important part is to have the methods in our view return the return type.
 For instance, lets look at the signatures of some methods in StringLike.
  
-trait StringLike {
-        def capitalize : String
-        def stripMargin(marginChar : Char) : String
-        def stripPrefix(prefix : String)
-}
+    trait StringLike {
+      def capitalize : String
+      def stripMargin(marginChar : Char) : String
+      def stripPrefix(prefix : String)
+    }
   
 All those methods exist in StringLike, but they do not return a StringLike, but a String. By returning the original type,
 the view does its best to remain hidden: the code calling capitalize only sees Strings. Calling the method does not surprise us.

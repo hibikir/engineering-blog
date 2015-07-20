@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Learn implicits: Views"
+title: "Learn implicits: Views as class extensions"
 subtitle: "You are using them already: Strings"
 header-img: "img/mon-field_rows.jpg"
 author: "Jorge Montero"
@@ -59,13 +59,13 @@ All this power comes with downsides. If a programmer is not familiar with all th
 There's also the temptation to define very wide conversions. Everyone does it, and later regrets it.
 Let's say that some classes that take a lot of Options:
 
-    case class Octopus(name:Option[String], tentacles:Option[Int], phoneNumber:Option[String])
+    case class Octopus(name : Option[String], tentacles : Option[Int], phoneNumber : Option[String])
     
-    val a = Octopus(Some(name),Some(tentacles),Some(phone))
+    val a = Octopus(Some(name), Some(tentacles), Some(phone))
 
 If we always have the data, those Options are just noise, so someone who recently learned views could write something like this:
 
-    implicit def optionify[T](t:T):Option[T] = Option(t)
+    implicit def optionify[T](t : T):Option[T] = Option(t)
 
 Which lets this call work:
 
@@ -73,7 +73,7 @@ Which lets this call work:
     val tentacles = 7
     val phone = "(888)-444-3333"
 
-    val a = Octopus(name,tentacles,phone)
+    val a = Octopus(name, tentacles, phone)
 
 Sounds great, right? We never have to wrap any values anymore! What's the worst that could happen?
 
@@ -115,7 +115,7 @@ In general, views that accept any type will be confusing. For example, Scala let
   
  So this gives every class a + method that lets it concatenate to a String.
 
-     Set("1","2","3") + "a gazebo" returns Set("1","2","3","a gazebo")
+    Set("1","2","3") + "a gazebo" returns Set("1","2","3","a gazebo")
     Set(1,2,3) + "a gazebo" returns "Set(1, 2, 3)a gazebo"
     "a gazebo" + Set(1,2,3) returns a "gazeboSet(1, 2, 3)"
     Set[Any]1,2,3) + "a gazebo" returns Set(1,2,3,"a gazebo")
@@ -125,26 +125,25 @@ If this isn't crazy enough for you, check out this [scala puzzler](http://scalap
 This has annoyed Scala developers enough that there are plans to remove it in
 a future version of Scala. If the language authors create troublesome views, the rest of us should take warning.
 
-Despite the possible surprises confusion, views are invaluable as a way to extend
- class functionality while still maintaining a strong type system, or requiring explicit wrapping.
-This post illustrates one way to use vies safely: Adding new functionality to a class, like with "fluttershy".capitalize.
-   Notice, in the code above, how careful de library devs were
-to make sure capitalize returns the type we started with. By not changing the return type, calling the method does not surprise us.
-
- trait StringLike {
-        def capitalize : scala.Predef.String
+We should aim to have the seamlessness of capitalize in our own view. An important part is to have the methods in our view return the return type.
+For instance, lets look at the signatures of some methods in StringLike.
+ 
+trait StringLike {
+        def capitalize : String
+        def stripMargin(marginChar : Char) : String
+        def stripPrefix(prefix : String)
 }
-
-As long as we are only adding functionality to a class, and our new methods do not have surprising return types, implicit
-conversions are a successful.
-
-
-Implicit conversions are invisible to the programmer, except
-IntelliJ underlines the code when a view is used.
+  
+All those methods exist in StringLike, but they do not return a StringLike, but a String. By returning the original type,
+the view does its best to remain hidden: the code calling capitalize only sees Strings. Calling the method does not surprise us.
+The one way the user can tell can tell that we are using a custom implicit conversion is IntelliJ.
 
 ![IntelliJ helps see implicits](/img/IntelliJUnderlinesImplicits.png)
 
-The 42 is underlined because Scala is converted a Scala int to a java int using a view, also defined in Predef
+The 42 is underlined because Scala is converted a Scala int to a java int using a view, also defined in Predef.
+
+Despite the possible surprises confusion, views are invaluable as a way to extend
+ class functionality while still maintaining a strong type system, and without requiring explicit wrapping.
 
 
 //this is another pos

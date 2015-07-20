@@ -134,7 +134,7 @@ For instance, lets look at the signatures of some methods in StringLike.
       def stripPrefix(prefix : String)
     }
   
-All those methods exist in StringLike, but they do not return a StringLike, but a String. By returning the original type,
+All those methods are in StringLike, but they do not return new StringLikes: They return String. By returning the original type,
 the view does its best to remain hidden: the code calling capitalize only sees Strings. Calling the method does not surprise us.
 The one way the user can tell can tell that we are using a custom implicit conversion is IntelliJ.
 

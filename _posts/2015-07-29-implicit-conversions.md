@@ -29,7 +29,8 @@ res2: String = java.lang.String
 </pre>
 
 <style scoped>
-  .capitalize { color: "red" }
+  .capitalize { color: #D907E8 }
+  .implicitdef { color: #1AB955 }
 </style>
 
 so we have a plain Java String, and we {{ "capitalize" | sc: "capitalize" }}
@@ -47,7 +48,9 @@ Somehow our String got converted into a StringLike, to call {{ "capitalize" | sc
 
 Scala automatically imports `scala.Predef` everywhere. Among many other things, Predef contains:
 
-    {{ "implicit def" | sc: "implicitdef" }} augmentString(x : String) : scala.collection.immutable.StringOps
+<pre>
+{{ "implicit def" | sc: "implicitdef" }} augmentString(x : String) : scala.collection.immutable.StringOps
+</pre>
 
 The return type of this method, [StringOps](https://github.com/scala/scala/blob/6ca8847eb5891fa610136c2c041cbad1298fb89c/src/library/scala/collection/immutable/StringOps.scala#L29),
 has the StringLike trait which includes the {{ "capitalize" | sc: "capitalize" }}
@@ -55,36 +58,34 @@ has the StringLike trait which includes the {{ "capitalize" | sc: "capitalize" }
 
 So what does that {{ "implicit def" | sc: "implicitdef" }} mean?
 
-Any time a parameter doesn't match the expected type, or we try to call a method that doesn't exist,
+Any time we try to call a method that doesn't exist (or when a parameter doesn't match the expected type),
  the compiler attempts to use a view to make it match.
-A view is a single parameter function, declared with the implicit keyword in front of it. The implicit keyword tells the compiler
-that as long as the function is in scope, the compiler can use it automatically.
+A view is a single-parameter function or constructor, declared with the {{ "implicit" | sc: "implicitdef" }} keyword in front of it. The  {{ "implicit" | sc: "implicitdef" }}  keyword tells the compiler
+that it can use this function automatically, for as long as it is in scope.
 
 It's almost as if Scala added methods without changing java.lang.String. No manual wrapping: it's almost invisible[1]. Sounds convenient!
 
-All this power comes with downsides. If a programmer is not familiar with all the views in scope, the code is harder to learn.
+All this power comes with downsides. If a programmer is not familiar with all the views in scope, the code is harder to interpret.
 There's also the temptation to define very wide conversions. Everyone does it, and later regrets it.
-Let's say that some classes that take a lot of Options:
+Let's say that some classes take a lot of Options:
 
     case class Octopus(name : Option[String], tentacles : Option[Int], phoneNumber : Option[String])
     
     val a = Octopus(Some(name), Some(tentacles), Some(phone))
 
-If we always have the data, those Options are just noise, so someone who recently learned views could write something like this:
+If we always have the data, those Options are just noise, so someone who recently learned views might write something like this:
 
-    implicit def optionify[T](t : T):Option[T] = Option(t)
+<pre>
+{{ "implicit def" | sc: "implicitdef" }} optionify[T](t : T):Option[T] = Option(t)
+</pre>
 
 Which lets this call work:
-
-    val name = "Angry Bob"
-    val tentacles = 7
-    val phone = "(888)-444-3333"
 
     val a = Octopus(name, tentacles, phone)
 
 Sounds great, right? We never have to wrap any values anymore! What's the worst that could happen?
 
-Wherever that implicit is in scope, any syntax error that could be fixed by wrapping anything into an Option will be 
+Wherever that implicit function is in scope, any syntax error that could be fixed by wrapping anything into an Option will be 
 "fixed" that way, whether it makes sense or not.
 
     val aList = ("a","b","c")
@@ -96,61 +97,69 @@ Wherever that implicit is in scope, any syntax error that could be fixed by wrap
     something.isEmpty
 
 List and Option define `isEmpty`. If you think you have a List, but you really have an Octopus, 
-the compiler will use your view, give you an Option[Octopus], and isEmpty will compile! That's not what we wanted when we defined our view,
+the compiler will use your view, give you an Option[Octopus], and `isEmpty` will compile! That's not what we wanted when we defined our view,
 but there it is. Add a few more implicits like that to the same scope, and suddenly you might as well be working in a language without types:
  the compiler stops being useful.
 
 To use this view responsibly,  add it to the scope very carefully, just for the
 code than needs it:
 
-    object AutoOption {
-      implicit def optionify[T](t:T):Option[T] = Option(t)
-    }
-  
-    class PutsThingsIntoOptionsAllTheTime{
-      import AutoOption._
-  
-      ... put code that uses the implicit conversion here ...
-  
-    }
-    
-In general, views that accept any type will be confusing. For example, Scala lets you call + on anything, as :
+<pre>
+object AutoOption {
+   {{ "implicit def" | sc: "implicitdef" }} def optionify[T](t:T):Option[T] = Option(t)
+}
 
-    implicit final class any2stringadd[A](private val self: A) extends AnyVal {
-      def +(other: String): String = String.valueOf(self) + other
-    }
+class PutsThingsIntoOptionsAllTheTime{
+  import AutoOption._
+
+  ... put code that uses the implicit conversion here ...
+
+}
+</pre>
+    
+In general, views that accept anything at all will be confusing. For example, Scala lets you call + on anything. Predef includes:
+
+<pre>
+{{ "implicit def" | sc: "implicitdef" }}  final class any2stringadd[A](private val self: A) extends AnyVal {
+  def +(other: String): String = String.valueOf(self) + other
+}
+</pre>
   
  So this gives every class a + method that lets it concatenate to a String.
 
+TODO: repl
     Set("1","2","3") + "a gazebo" returns Set("1","2","3","a gazebo")
     Set(1,2,3) + "a gazebo" returns "Set(1, 2, 3)a gazebo"
     "a gazebo" + Set(1,2,3) returns a "gazeboSet(1, 2, 3)"
-    Set[Any]1,2,3) + "a gazebo" returns Set(1,2,3,"a gazebo")
+    Set[Any](1,2,3) + "a gazebo" returns Set(1,2,3,"a gazebo")
+    Some("gazebo") + 3 complains "Type mismatch, 3 is not a string"
 
-If this isn't crazy enough for you, check out this [scala puzzler](http://scalapuzzlers.com/#pzzlr-040).
+If this isn't crazy enough for you, check out this [Scala puzzler](http://scalapuzzlers.com/#pzzlr-040).
 
-This has annoyed Scala developers enough that there are plans to remove it in
+This has annoyed so many people so much that there are plans to remove it in
 a future version of Scala. If the language authors create troublesome views, the rest of us should take warning.
 
-We should aim to have the seamlessness of capitalize in our own view. An important part is to have the methods in our view return the return type.
-For instance, lets look at the signatures of some methods in StringLike.
+When creating views, aim to have the seamlessness of {{ "capitalize" | sc: "capitalize" }}. The view aims to be invisible. Notice that {{ "capitalize" | sc: "capitalize" }} returns a String; when we benefit from the view, we never see the intermediate StringOps type. Other bonus methods do the same:
  
-    trait StringLike {
-      def capitalize : String
-      def stripMargin(marginChar : Char) : String
-      def stripPrefix(prefix : String)
-    }
-  
-All those methods are in StringLike, but they do not return new StringLikes: They return String. By returning the original type,
-the view does its best to remain hidden: the code calling capitalize only sees Strings. Calling the method does not surprise us.
-The one way the user can tell can tell that we are using a custom implicit conversion is IntelliJ.
+<pre>
+trait StringLike {
+  def {{ "capitalize" | sc: "capitalize" }} : String
+  def stripMargin(marginChar : Char) : String
+  def stripPrefix(prefix : String)
+}
+</pre>  
+
+Calling the method does not surprise us.
+The one way the user can tell that we are using a custom implicit conversion is this subtle underline in IntelliJ:
 
 ![IntelliJ helps see implicits](/img/IntelliJUnderlinesImplicits.png)
 
-The 42 is underlined because Scala is converted a Scala int to a java int using a view, also defined in Predef.
+ {{ "capitalize" | sc: "capitalize" }} is underlined because the method is added by a view.
+The 42 is underlined because a Scala Int is converted to a Java Integer using another view defined in Predef[LINK].
 
-Despite the possible surprises confusion, views are invaluable as a way to extend
- class functionality while still maintaining a strong type system, and without requiring explicit wrapping.
+While overly wide views in an overly wide scope can lead to confusion,
+views are an invaluable way to extend
+ class functionality with a strong type system, without a bunch of explicit wrapping. 
 
 
 //this is another pos

@@ -21,32 +21,39 @@ s: String = fluttershy
 scala> s.getClass.getName
 res1: String = java.lang.String
 
-scala> val cap = s.capitalize
+scala> val cap = s.{{ "capitalize" | sc: "capitalize" }}
 cap: String = Fluttershy
 
 scala> cap.getClass.getName
 res2: String = java.lang.String
 </pre>
 
-so we have a plain Java String, and we capitalize it. Seems simple. I just called a method on an object. 
-Except java.lang.String does not have a capitalize method! What sorcery is this?
+<style scoped>
+  .capitalize { color: "red" }
+</style>
+
+so we have a plain Java String, and we {{ "capitalize" | sc: "capitalize" }}
+ it. Seems simple. I just called a method on an object. 
+Except java.lang.String does not have a {{ "capitalize" | sc: "capitalize" }}
+ method! What sorcery is this?
 
 ![IntelliJ understands capitalize](/img/capitalize.png)
 
-As IntelliJ tells us, the capitalize method is a part of [StringLike](https://github.com/scala/scala/blob/6ca8847eb5891fa610136c2c041cbad1298fb89c/src/library/scala/collection/immutable/StringLike.scala#L141).
+As IntelliJ tells us, the {{ "capitalize" | sc: "capitalize" }}
+ method is a part of [StringLike](https://github.com/scala/scala/blob/6ca8847eb5891fa610136c2c041cbad1298fb89c/src/library/scala/collection/immutable/StringLike.scala#L141).
 
-   
-(where scala.Predef.String is an alias for java.lang.String. <- maybe footnote this?) 
-Somehow our String got converted into a StringLike, to call capitalize. But we didn't do anything!
+Somehow our String got converted into a StringLike, to call {{ "capitalize" | sc: "capitalize" }}
+. But we didn't do anything!
 
 Scala automatically imports `scala.Predef` everywhere. Among many other things, Predef contains:
 
-    implicit def augmentString(x : scala.Predef.String) : scala.collection.immutable.StringOps
+    {{ "implicit def" | sc: "implicitdef" }} augmentString(x : String) : scala.collection.immutable.StringOps
 
-[StringOps](https://github.com/scala/scala/blob/6ca8847eb5891fa610136c2c041cbad1298fb89c/src/library/scala/collection/immutable/StringOps.scala#L29)
-has the StringLike trait which includes the capitalize method.   
+The return type of this method, [StringOps](https://github.com/scala/scala/blob/6ca8847eb5891fa610136c2c041cbad1298fb89c/src/library/scala/collection/immutable/StringOps.scala#L29),
+has the StringLike trait which includes the {{ "capitalize" | sc: "capitalize" }}
+ method.   
 
-So what does that `implicit def` mean?
+So what does that {{ "implicit def" | sc: "implicitdef" }} mean?
 
 Any time a parameter doesn't match the expected type, or we try to call a method that doesn't exist,
  the compiler attempts to use a view to make it match.

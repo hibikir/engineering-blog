@@ -127,12 +127,22 @@ In general, views that accept anything at all will be confusing. For example, Sc
   
  So this gives every class a + method that lets it concatenate to a String.
 
-TODO: repl
-    Set("1","2","3") + "a gazebo" returns Set("1","2","3","a gazebo")
-    Set(1,2,3) + "a gazebo" returns "Set(1, 2, 3)a gazebo"
-    "a gazebo" + Set(1,2,3) returns a "gazeboSet(1, 2, 3)"
-    Set[Any](1,2,3) + "a gazebo" returns Set(1,2,3,"a gazebo")
-    Some("gazebo") + 3 complains "Type mismatch, 3 is not a string"
+    scala> Set("1","2","3") + "a gazebo"
+    res0: scala.collection.immutable.Set[String] = Set(1, 2, 3, a gazebo)
+
+    scala> Set(1,2,3) + "a gazebo"
+    res1: String = Set(1, 2, 3)a gazebo
+
+    scala> "a gazebo" + Set(1,2,3)
+    res2: String = a gazeboSet(1, 2, 3)
+
+    scala> Set[Any](1,2,3) + "a gazebo"
+    res3: scala.collection.immutable.Set[Any] = Set(1, 2, 3, a gazebo)
+
+    scala> Some("gazebo") + 3
+    <console>:8: error: type mismatch;
+     found   : Int(3)
+     required: String
 
 If this isn't crazy enough for you, check out this [Scala puzzler](http://scalapuzzlers.com/#pzzlr-040).
 
@@ -155,7 +165,7 @@ The one way the user can tell that we are using a custom implicit conversion is 
 ![IntelliJ helps see implicits](/img/IntelliJUnderlinesImplicits.png)
 
  {{ "capitalize" | sc: "capitalize" }} is underlined because the method is added by a view.
-The 42 is underlined because a Scala Int is converted to a Java Integer using another view defined in Predef[LINK].
+The 42 is underlined because a Scala Int is converted to a Java Integer using another view defined in [Predef](https://github.com/scala/scala/blob/2.11.x/src/library/scala/Predef.scala#L353).
 
 While overly wide views in an overly wide scope can lead to confusion,
 views are an invaluable way to extend

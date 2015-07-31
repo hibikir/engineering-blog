@@ -13,7 +13,7 @@ extra_css:
   
 </style>
 
-We've looked at some common, simple ways implicits are used in every day scala. THere's one major common pattern that
+We've looked at some common ways implicits are used in every day scala. THere's one major common pattern that
 combines a lot of the techniques we've used before: Type classes.
 
 Type classes are a way to extend the functionality of classes without actually changing them, or losing type safety.

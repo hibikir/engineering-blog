@@ -42,7 +42,7 @@ have a good excuse: nothing uses the class we are converting to. Its whole purpo
  ToJson takes an implicit parameter, a JsonWriter of T. So for any type T we want to convert to Json,
 there must be a JsonWriter[T], and it must be in the magic hat at the time it's called.
 
-JsonWriter is a trait with a single method, a write method.
+JsonWriter is a trait with a single method, write.
 
 trait JsonWriter[T] {
   def write(obj: T): JsValue
@@ -67,6 +67,20 @@ documentation instructs us to import DefaultJsonProtocol._.
   
   Which is closer to what using serialization libraries look like in a language without implicits.
   
+The typeclass pattern has allowed us to add a complex feature, serialization, to any class we want, in a generic way,
+without actually changing the classes. When we add features to a class through inheritance, we have to own the class,
+and the extra features need to be added in all the time, making our classes bigger.
+ If instead we use a wrapper class, we lose the original type of the class. Using views alone, we have to reimplement
+the feature from the beginning on every class. Typeclasses offer what, in many cases is a better solution.
+  
+This pattern of typeclasses is used in most major libraries out there: Spray-routing also uses it for serialization
+and returning data, although they call it 'magnet pattern'. Slick uses it too, to turn objects into database queries.
+
+
+
+/////////taken out 
+
+
   If we want to serialize our own classes, all we have to do is write JsonReaders for them. In the case of case classes,
    Spray has a helper mechanism to make it work:
    
@@ -78,5 +92,3 @@ documentation instructs us to import DefaultJsonProtocol._.
    
 But the way it works is fairly complex, and is out of scope for this post.
     
-This pattern of typeclasses is used in most major libraries out there: Spray-routing also uses it for serialization
-and returning data, although they call it 'magnet pattern'. Slick uses it too, to turn objects into database queries.

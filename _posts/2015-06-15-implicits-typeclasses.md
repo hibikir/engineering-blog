@@ -35,12 +35,23 @@ In this file, we find the following code:
      def toJson(implicit writer: JsonWriter[T]): JsValue = writer.write(any)
    }
    
- After the last few articles, we are prepared for this. The first implicit is an implicit conversion, that turns anything
- into a PimpedAny: So it gives any object an implementation of toJson.
+ After the last few articles, we are ready for this. The first line is a view that turns anything
+ into a PimpedAny: It gives any object an implementation of toJson. We warned against this in the post about views, but here we
+have a good excuse: nothing uses the class we are converting to. Its whole purpose is to add a method that is unique to spray-json.
  
- The method itself takes only a parameter: It's an implicit parameter, a JsonWriter of T. So for any type we want to serialize,
- we need to define a JsonWriter[T], and put it in the magic hat. Spray Json includes JsonWriters for basic types in that
- DefaultJsonProtocol.
+ ToJson takes an implicit parameter, a JsonWriter of T. So for any type T we want to convert to Json,
+there must be a JsonWriter[T], and it must be in the magic hat at the time it's called.
+
+JsonWriter is a trait with a single method, a write method.
+
+trait JsonWriter[T] {
+  def write(obj: T): JsValue
+}
+
+Along with this JsonWriter, there's also a JsonReader for deserialization, and a JsonFormat, which extends
+both traits, and is the one we'd normally extend.
+Spray Json has built-in JsonFormats for many commonly used types in DefaultJsonProtocol. That's why the
+documentation instructs us to import DefaultJsonProtocol._.
  
  So, for a String:
  import spray.json._
@@ -54,10 +65,10 @@ In this file, we find the following code:
    val pony = "Fluttershy"
    val json = new PimpedAny[String](pony).toJson(DefaultJsonProtocol.StringJsonFormat)
   
-  Which is closer to what our code would look like in a language without implicits.
+  Which is closer to what using serialization libraries look like in a language without implicits.
   
   If we want to serialize our own classes, all we have to do is write JsonReaders for them. In the case of case classes,
-   Spray has a mechanism to make it work:
+   Spray has a helper mechanism to make it work:
    
    case class Pony(name:String, cutieMark:String)
    
@@ -65,7 +76,7 @@ In this file, we find the following code:
     implicit def jsonFormat = jsonFormat2(Pony.apply)
    }
    
-But it works in pretty tricky ways, still full of implicits, and is out of scope for this post.
+But the way it works is fairly complex, and is out of scope for this post.
     
 This pattern of typeclasses is used in most major libraries out there: Spray-routing also uses it for serialization
 and returning data, although they call it 'magnet pattern'. Slick uses it too, to turn objects into database queries.

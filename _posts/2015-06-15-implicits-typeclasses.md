@@ -10,7 +10,10 @@ extra_css:
 ---
 
 <style scoped>
-  
+  .pimpedAny { color: #D907E8 }
+  .implicitdef { color: #1AB955 }
+  .toJson {color: #FF9C00 }
+
 </style>
 
 In this series on Scala implicits, we have looked at some everyday uses of implicits: 
@@ -19,7 +22,7 @@ In this series on Scala implicits, we have looked at some everyday uses of impli
 [adding methods](http://engineering.monsanto.com/2015/07/31/implicit-conversions/). 
 One major common pattern combines a lot of these techniques: Type classes.
 
-Caution: please excuse the name. "Type classes" resembles neither types nor classes in a way useful for understanding.
+**Caution**: please excuse the name. "Type classes" resembles neither types nor classes in a way useful for understanding.
  The pattern is called "type classes" for historical reasons.
 
 Type classes extend the functionality of classes without actually changing them, and without losing type safety.
@@ -29,39 +32,39 @@ This pattern is often used on classes that we do not control, but it's also usef
 
 [The documentation claims](https://github.com/spray/spray-json#usage) that any object can have the .toJson method 
 if we add a couple of imports.
-
-    import spray.json._
-    import DefaultJsonProtocol._
-
+<pre>
+import spray.json._
+import DefaultJsonProtocol._
+</pre>
 The two imports add some implicits to the compiler's magic hat. 
 
-![the magic hat: implicit declarations go in, implicit parameter values come out]("img/typeclass-magic-hat-0.png")
+![the magic hat: implicit declarations go in, implicit parameter values come out](/img/typeclass-magic-hat-0.png)
 
 The first import brings in everything in the 
 [spray json package object](https://github.com/spray/spray-json/blob/master/src/main/scala/spray/json/package.scala)
 
 In this file, we find the following code: 
+<pre>
+{{"implicit def pimpAny[T]\(any: T\)" | sc: "implicitdef"}} = new PimpedAny(any) 
+private[json] class {{"PimpedAny[T]"| sc: "pimpedAny""}}(any: T) {
+    def {{"toJson"| sc: "toJson""}}(implicit writer: JsonWriter[T]): JsValue = writer.write(any)
+}
+</pre>
 
-     implicit def pimpAny[T](any: T) = new PimpedAny(any)
- 
-     private[json] class PimpedAny[T](any: T) {
-         def toJson(implicit writer: JsonWriter[T]): JsValue = writer.write(any)
-     }
-   
- After the last few articles, we are ready for this. The first line is a view[color] that turns anything
- into a PimpedAny[color]. Now any object implements toJson.
+ After the last few articles, we are ready for this. The first line is a {{"view" |sc:"implicitdef"}} that turns anything
+ into a {{"PimpedAny"| sc: "pimpedAny""}}. Now any object implements {{"toJson" |sc:"toJson"}}.
  We [warned](http://engineering.monsanto.com/2015/07/31/implicit-conversions/) against this kind of breadth in views,
  but here we are safe from surprises: nothing uses the class we are converting to.
  This view adds a method that is unique to spray-json;
  calling this method is the only way to trigger the compiler to pull this view out of its hat and transform any object.
 
-Calling toJson on an object transforms it into a JsValue, a representation of JSON data.
+Calling {{"toJson" |sc:"toJson"}} on an object transforms it into a JsValue, a representation of JSON data.
  It has two methods, prettyPrint and compactPrint, that return a String we can transmit or save.
  
 But does any object really implement JSON serialization, just like that? No.
-This toJson method takes an implicit parameter, a JsonWriter of T.
+This {{"toJson" |sc:"toJson"}} method takes an implicit parameter, a JsonWriter of T.
 So for any type T we want to convert to Json, there must be a JsonWriter[T], 
-and it must be in the magic hat at the scope where toJson is called. 
+and it must be in the magic hat at the scope where {{"toJson" |sc:"toJson"}} is called. 
 
 What is a JsonWriter[T], and where would the compiler find one?
 
@@ -93,7 +96,7 @@ This is pretty much what serialization looks like in a language without implicit
 This use of the type class pattern adds a complex feature (like serialization) to any class we want, in a generic way,
 without changing the classes. The usual types have serialization code in DefaultJsonFormat.
 
-![the magic hat: importing DefaultJsonProtocol puts a JsonFormat of String in the hat]("img/typeclass-magic-hat-1.png")
+![the magic hat: importing DefaultJsonProtocol puts a JsonFormat of String in the hat](/img/typeclass-magic-hat-1.png)
 
 For our own class T, we can get access to the .toJson method by defining an implicit val of type JsonFormat[T].
 This is called "providing an instance of the JsonFormat type class for T.") spray-json defines 
@@ -108,32 +111,32 @@ This is the killer feature of the type class pattern: it composes.
 With one definition for a JsonFormat[List[T]], a List of any JsonFormat-able T is suddenly JsonFormat-able.
 Here's the trick --instead of supplying an implicit val for JsonFormat of List, there is an implicit def in DefaultJsonFormat._:
 
-  implicit def listFormat[T :JsonFormat] = new RootJsonFormat[List[T]] {
-    def write(list: List[T]) = ..
-    def read(value: JsValue): List[T] = ..
-  }
+    implicit def listFormat[T :JsonFormat] = new RootJsonFormat[List[T]] {
+      def write(list: List[T]) = ..
+      def read(value: JsValue): List[T] = ..
+    }
 
 What is this doing? First, we have to understand some new syntax: inside the type parameter[COLOR]. 
 This is called [Context Bounds](http://docs.scala-lang.org/tutorials/FAQ/context-and-view-bounds.html):
 Those are the words to find documentation. This is a shorthand for "a type T such that there exists in the magic hat a JsonFormat[T]".
-The compiler expands the listFormat function declaration to:
+The compiler expands the listFormat function declaration above to:
 
-implicit def listFormat[T](implicit _ : JsonFormat[T]) = new RootJsonFormat[List[T]] {
-    def write(list: List[T]) = ..
-    def read(value: JsValue): List[T] = ..
-}
+    implicit def listFormat[T](implicit _ : JsonFormat[T]) = new RootJsonFormat[List[T]] {
+      def write(list: List[T]) = ..
+      def read(value: JsValue): List[T] = ..
+    }
 
 This guarantees that the write function inside listFormat will be able to call .toJson on the elements in the List.
 
-This implicit def does not work the same way as a view[LINK]((http://engineering.monsanto.com/2015/07/31/implicit-conversions/)), which converts one type to another.
+This implicit def does not work the same way as a [view]((http://engineering.monsanto.com/2015/07/31/implicit-conversions/)), which converts one type to another.
 Instead, it is is a supplier of implicit values. It can give the compiler a JsonFormat[List[T]],as long as the compiler supplies a JsonFormat[T]. 
 
-![the magic hat: JsonDefaultProtocol puts in a function that turns an implicit JsonFormat of T into a JsonFormat of Seq of T]("img/typeclass-magic-hat-2.png")
+![the magic hat: JsonDefaultProtocol puts in a function that turns an implicit JsonFormat of T into a JsonFormat of Seq of T](/img/typeclass-magic-hat-2.png)
 
 This one definition composes with any other JsonFormats in the magic hat. 
 The compiler calls as many of these implicit functions, as many times as needed, to produce the implicit parameter it desperately desires. 
 
-![the magic hat: to satisfy the implicit parameter of type JsonFormat of Seq of T, the magic hat uses both these values]("img/typeclass-magic-hat-3.png")
+![the magic hat: to satisfy the implicit parameter of type JsonFormat of Seq of T, the magic hat uses both these values](/img/typeclass-magic-hat-3.png)
 
 This can go on and on. When you import DefaultJsonProtocol._ and then call .toJson on an Option[Map[String,List[Int]]],
 the compiler uses implicit functions for Option, Map, and List, along with implicit vals for String and Int,

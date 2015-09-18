@@ -33,7 +33,11 @@ if we add a couple of imports.
     import spray.json._
     import DefaultJsonProtocol._
 
-The two imports add some implicits to the compiler's magic hat. The first import brings in everything in the 
+The two imports add some implicits to the compiler's magic hat. 
+
+![the magic hat: implicit declarations go in, implicit parameter values come out]("img/typeclass-magic-hat-0.png")
+
+The first import brings in everything in the 
 [spray json package object](https://github.com/spray/spray-json/blob/master/src/main/scala/spray/json/package.scala)
 
 In this file, we find the following code: 
@@ -88,6 +92,9 @@ This is pretty much what serialization looks like in a language without implicit
   
 This use of the type class pattern adds a complex feature (like serialization) to any class we want, in a generic way,
 without changing the classes. The usual types have serialization code in DefaultJsonFormat.
+
+![the magic hat: importing DefaultJsonProtocol puts a JsonFormat of String in the hat]("img/typeclass-magic-hat-1.png")
+
 For our own class T, we can get access to the .toJson method by defining an implicit val of type JsonFormat[T].
 This is called "providing an instance of the JsonFormat type class for T.") spray-json defines 
 [helper methods to help with this](https://github.com/spray/spray-json#providing-jsonformats-for-case-classes).
@@ -120,10 +127,15 @@ This guarantees that the write function inside listFormat will be able to call .
 
 This implicit def does not work the same way as a view[LINK]((http://engineering.monsanto.com/2015/07/31/implicit-conversions/)), which converts one type to another.
 Instead, it is is a supplier of implicit values. It can give the compiler a JsonFormat[List[T]],as long as the compiler supplies a JsonFormat[T]. 
+
+![the magic hat: JsonDefaultProtocol puts in a function that turns an implicit JsonFormat of T into a JsonFormat of Seq of T]("img/typeclass-magic-hat-2.png")
+
 This one definition composes with any other JsonFormats in the magic hat. 
 The compiler calls as many of these implicit functions, as many times as needed, to produce the implicit parameter it desperately desires. 
 
-When you import DefaultJsonProtocol._ and then call .toJson on an Option[Map[String,List[Int]]],
+![the magic hat: to satisfy the implicit parameter of type JsonFormat of Seq of T, the magic hat uses both these values]("img/typeclass-magic-hat-3.png")
+
+This can go on and on. When you import DefaultJsonProtocol._ and then call .toJson on an Option[Map[String,List[Int]]],
 the compiler uses implicit functions for Option, Map, and List, along with implicit vals for String and Int,
 to compose a JsonFormat[Option[Map[String,List[Int]]]]. That gets passed into .toJson, and only then does serialization occur.
 

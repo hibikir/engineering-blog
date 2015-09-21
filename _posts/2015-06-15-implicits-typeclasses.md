@@ -30,7 +30,7 @@ This pattern is often used on classes that we do not control, but it's also usef
  Serialization is a cross-cutting concern, and [spray-json](https://github.com/spray/spray-json) provides an excellent example.
  Let's see how it implements low-overhead JSON serialization/deserialization using type classes.
 
-[The documentation claims](https://github.com/spray/spray-json#usage) that any object can have the .toJson method 
+[The documentation says](https://github.com/spray/spray-json#usage) that any object can have the .toJson method 
 if we add a couple of imports.
 <pre>
 import spray.json._
@@ -76,7 +76,8 @@ JsonWriter is a trait with a single method, write.
 
 spray-json defines this trait, along with JsonReader for deserialization, and JsonFormat for both together. JsonFormat is most often defined.
 Spray-json has built-in JsonFormat implementations for many common types; these lurk in DefaultJsonProtocol. 
-We bring all of them into implicit scope when we import DefaultJsonProtocol._.
+We bring all of them into implicit scope when we import DefaultJsonProtocol._. It's those JsonFormats that know how to serialize
+and deserialize json.
  
 For instance, there is an implicit JsonFormat[String]. In type class parlance, "There is an instance of the JsonFormat type class for String." We can use it like this:
 
@@ -99,13 +100,13 @@ without changing the classes. The usual types have serialization code in Default
 ![the magic hat: importing DefaultJsonProtocol puts a JsonFormat of String in the hat](/img/typeclass-magic-hat-1.png)
 
 For our own class T, we can get access to the .toJson method by defining an implicit val of type JsonFormat[T].
-This is called "providing an instance of the JsonFormat type class for T.") spray-json defines 
-[helper methods to help with this](https://github.com/spray/spray-json#providing-jsonformats-for-case-classes).
-There's also a [project](https://github.com/fommil/spray-json-shapeless) that generates them by adding an import ;
- the details are outside the scope of this post.
+This is called "providing an instance of the JsonFormat type class for T." We could write them by hand, but for 
+case classes, spray-json defines [helper methods to help with this](https://github.com/spray/spray-json#providing-jsonformats-for-case-classes).
+There's also a [project](https://github.com/fommil/spray-json-shapeless) that makes the compiler generate it all;
+ the details of how they work are outside the scope of this post.
 
 Here's the kicker: when we make a JsonFormat[T], we get more than serialization/deserialization for T.
-We can now call toJson on Seq[T], on Map[String,T], on Option[Map[T,List[T]]] ... the possibilities are endless!
+We can now call toJson on Seq[T], on Map[String,T], on Option[Map[T,List[T]]], without writing any extra code!
 
 This is the killer feature of the type class pattern: it composes.
 With one definition for a JsonFormat[List[T]], a List of any JsonFormat-able T is suddenly JsonFormat-able.
@@ -118,7 +119,8 @@ Here's the trick --instead of supplying an implicit val for JsonFormat of List, 
 
 What is this doing? First, we have to understand some new syntax: inside the type parameter[COLOR]. 
 This is called [Context Bounds](http://docs.scala-lang.org/tutorials/FAQ/context-and-view-bounds.html):
-Those are the words to find documentation. This is a shorthand for "a type T such that there exists in the magic hat a JsonFormat[T]".
+Good luck finding the documentation without knowing this special name.
+This is a shorthand for "a type T such that there exists in the magic hat a JsonFormat[T]".
 The compiler expands the listFormat function declaration above to:
 
     implicit def listFormat[T](implicit _ : JsonFormat[T]) = new RootJsonFormat[List[T]] {
@@ -128,7 +130,7 @@ The compiler expands the listFormat function declaration above to:
 
 This guarantees that the write function inside listFormat will be able to call .toJson on the elements in the List.
 
-This implicit def does not work the same way as a [view]((http://engineering.monsanto.com/2015/07/31/implicit-conversions/)), which converts one type to another.
+This implicit def does not work the same way as a [view]((http://engineering.monsanto.com/2015/07/31/implicit-conversions/)), which converts a single type to another.
 Instead, it is is a supplier of implicit values. It can give the compiler a JsonFormat[List[T]],as long as the compiler supplies a JsonFormat[T]. 
 
 ![the magic hat: JsonDefaultProtocol puts in a function that turns an implicit JsonFormat of T into a JsonFormat of Seq of T](/img/typeclass-magic-hat-2.png)
@@ -138,7 +140,7 @@ The compiler calls as many of these implicit functions, as many times as needed,
 
 ![the magic hat: to satisfy the implicit parameter of type JsonFormat of Seq of T, the magic hat uses both these values](/img/typeclass-magic-hat-3.png)
 
-This can go on and on. Let's say we want to call .toJson on an Option[Map[String,List[Int]]]:
+This works on types as complicated as we want. Let's say we want to serialize an Option[Map[String,List[Int]]]:
 
     import spray.json._
     import DefaultJsonProtocol._
@@ -147,36 +149,33 @@ This can go on and on. Let's say we want to call .toJson on an Option[Map[String
     val json = a.toJson
     println(json.prettyPrint)
 
-the compiler uses implicit functions for Option, Map, and List, along with implicit vals for String and Int,
+The compiler uses implicit functions for Option, Map, and List, along with implicit vals for String and Int,
 to compose a JsonFormat[Option[Map[String,List[Int]]]]. 
 That gets passed into .toJson, and only then does serialization occur.
-If we instead used the formats explicitly, the code above becomes:
+If we instead use the formats explicitly, the code above becomes:
 
-import spray.json._
+    import spray.json._
 
-val a:Option[Map[String,List[Int]]] = Some(Map("Applejack" -> List(1,2,3,4),"Fluttershy" -> List(2,4,6,8)))
+    val a:Option[Map[String,List[Int]]] = Some(Map("Applejack" -> List(1,2,3,4),"Fluttershy" -> List(2,4,6,8)))
 
-val json = a.toJson(DefaultJsonProtocol.optionFormat(
-            DefaultJsonProtocol.mapFormat(
-                    DefaultJsonProtocol.StringJsonFormat,
-                    DefaultJsonProtocol.listFormat(
-                        DefaultJsonProtocol.IntJsonFormat
-                    )
-            )))
-println(json.prettyPrint)
+    val json = new PimpedAny[Option[Map[String,List[Int]]]](a).toJson(DefaultJsonProtocol.optionFormat(
+                DefaultJsonProtocol.mapFormat(
+                        DefaultJsonProtocol.StringJsonFormat,
+                        DefaultJsonProtocol.listFormat(
+                            DefaultJsonProtocol.IntJsonFormat
+                        )
+                )))
+    println(json.prettyPrint)
 
 
 Whew, that's a lot of magic. This property of composition makes the type class pattern very useful.
-That much magic also means it's hard to understand: 
+That much magic also means it's hard to understand. 
  While you'll rarely need to create your own types in the style of JsonFormat,
-you'll often want to create new type class instances.
- 
- 
-Other times you need to find the right ones to import;
-spray-routing uses this pattern for returning data, 
-although they call it the 'magnet pattern' and try to get you to read [a post much, much longer than this one](http://spray.io/blog/2012-12-13-the-magnet-pattern/).
-In some ways, this is the culmination of Scala's implicit pattern. If this post makes sense, then you're well on your way to Scala mastery.
+you'll often want to create new type class instances. Other times you need to find the right ones to import.
+Either way, familiarity with the pattern is essential when using spray-json, and many other libraries.
 
+spray-routing uses this pattern for a lot of things, including returning data, and to avoid some pitfalls of method overloading.
+They call it the 'magnet pattern' and try to get you to read [a post much, much longer than this one](http://spray.io/blog/2012-12-13-the-magnet-pattern/).
+Ultimately it's the same pattern, used for some other different properties
 
-This pattern of typeclasses is used in most major libraries out there: Spray-routing also uses it for serialization
-and returning data, although they call it 'magnet pattern'. Slick uses it too, to turn objects into database queries.
+In some ways, this is the culmination of Scala's implicit feature. If this post makes sense, then you're well on your way to Scala mastery.

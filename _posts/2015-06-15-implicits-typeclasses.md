@@ -138,15 +138,40 @@ The compiler calls as many of these implicit functions, as many times as needed,
 
 ![the magic hat: to satisfy the implicit parameter of type JsonFormat of Seq of T, the magic hat uses both these values](/img/typeclass-magic-hat-3.png)
 
-This can go on and on. When you import DefaultJsonProtocol._ and then call .toJson on an Option[Map[String,List[Int]]],
+This can go on and on. Let's say we want to call .toJson on an Option[Map[String,List[Int]]]:
+
+    import spray.json._
+    import DefaultJsonProtocol._
+
+    val a:Option[Map[String,List[Int]]] = Some(Map("Applejack" -> List(1,2,3,4),"Fluttershy" -> List(2,4,6,8))) 
+    val json = a.toJson
+    println(json.prettyPrint)
+
 the compiler uses implicit functions for Option, Map, and List, along with implicit vals for String and Int,
-to compose a JsonFormat[Option[Map[String,List[Int]]]]. That gets passed into .toJson, and only then does serialization occur.
+to compose a JsonFormat[Option[Map[String,List[Int]]]]. 
+That gets passed into .toJson, and only then does serialization occur.
+If we instead used the formats explicitly, the code above becomes:
+
+import spray.json._
+
+val a:Option[Map[String,List[Int]]] = Some(Map("Applejack" -> List(1,2,3,4),"Fluttershy" -> List(2,4,6,8)))
+
+val json = a.toJson(DefaultJsonProtocol.optionFormat(
+            DefaultJsonProtocol.mapFormat(
+                    DefaultJsonProtocol.StringJsonFormat,
+                    DefaultJsonProtocol.listFormat(
+                        DefaultJsonProtocol.IntJsonFormat
+                    )
+            )))
+println(json.prettyPrint)
+
 
 Whew, that's a lot of magic. This property of composition makes the type class pattern very useful.
-Just imagine how much boilerplate it would take to do this without implicits!
 That much magic also means it's hard to understand: 
  While you'll rarely need to create your own types in the style of JsonFormat,
-you'll often want to create new type class instances. 
+you'll often want to create new type class instances.
+ 
+ 
 Other times you need to find the right ones to import;
 spray-routing uses this pattern for returning data, 
 although they call it the 'magnet pattern' and try to get you to read [a post much, much longer than this one](http://spray.io/blog/2012-12-13-the-magnet-pattern/).

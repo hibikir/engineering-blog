@@ -135,7 +135,7 @@ The context-bounds notation above expands to:
 
 This guarantees that the write function inside listFormat will be able to call {{".toJson"| sc: "toJson""}} on the elements in the List.
 
-This {{"implicit def"|sc: "implicitdef"}} does not work the same way as a [view]((http://engineering.monsanto.com/2015/07/31/implicit-conversions/)), which converts a single type to another.
+This {{"implicit def"|sc: "implicitdef"}} does not work the same way as a [view](http://engineering.monsanto.com/2015/07/31/implicit-conversions/), which converts a single type to another.
 Instead, it is is a supplier of implicit values. It can give the compiler a JsonFormat[List[T]],as long as the compiler supplies a JsonFormat[T]. 
 
 ![the magic hat: JsonDefaultProtocol puts in a function that turns an implicit JsonFormat of T into a JsonFormat of Seq of T](/img/typeclass-magic-hat-2.png)

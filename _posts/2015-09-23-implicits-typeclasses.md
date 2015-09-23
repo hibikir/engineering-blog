@@ -12,10 +12,10 @@ extra_css:
 <style scoped>
   .pimpedAny { color: #D907E8 }
   .implicitdef { color: #1AB955 }
-  .implicitparam { color: #00FF9C }
-  .toJson {color: #FF9C00 }
-  .jsValue {color: #9CFF00 }
-  .contextbound {color: #009CFF }
+  .implicitparam { color: #FF9C00 }
+  .toJson {color: #BA182F }
+  .jsValue {color: #08B9D1 }
+  .contextbound {color: #D15308 }
 </style>
 
 In this series on Scala implicits, we have seen 
@@ -46,7 +46,7 @@ The two imports add some implicits to the compiler's magic hat.
 [spray json package object](https://github.com/spray/spray-json/blob/master/src/main/scala/spray/json/package.scala), including:
 
 <pre>
-{{"implicit def pimpAny[T]\(any: T\)" | sc: "implicitdef"}} = new {{"PimpedAny"| sc: "pimpedAny""}}(any) 
+{{"implicit def pimpAny[T](any: T)" | sc: "implicitdef"}} = new {{"PimpedAny"| sc: "pimpedAny""}}(any) 
 private[json] class {{"PimpedAny[T]"| sc: "pimpedAny""}}(any: T) {
     def {{"toJson"| sc: "toJson""}}(implicit writer: JsonWriter[T]): {{"JsValue"| sc: "jsValue"}} = writer.write(any)
 }
@@ -61,9 +61,9 @@ Calling {{"toJson" |sc:"toJson"}} transforms an object into a {{"JsValue"| sc: "
  Two methods on {{"JsValue"| sc: "jsValue"}}, prettyPrint and compactPrint, return a String we can transmit or save.
  
 Can we now serialize every single object, just like that? No. Not that easy. Here's the declaration again:
-
-    def {{"toJson"| sc: "toJson""}}({{"implicit writer: JsonWriter[T]"| sc: "implicitparam"}}): {{"JsValue"| sc: "jsValue"}}
-
+<pre>
+def {{"toJson"| sc: "toJson""}}({{"implicit writer: JsonWriter[T]"| sc: "implicitparam"}}): {{"JsValue"| sc: "jsValue"}}
+</pre>
 This {{"toJson" |sc:"toJson"}} method takes an {{"implicit parameter"| sc: "implicitparam"}}, a JsonWriter of T.
 So for any type T we want to convert to Json, there must be a JsonWriter[T], 
 and it must be in the magic hat, in scope where {{"toJson" |sc:"toJson"}} is called. 
@@ -82,18 +82,19 @@ We bring all of them into implicit scope when we `import DefaultJsonProtocol._`.
 and deserialize JSON.
  
 For instance, there is an implicit JsonFormat[String]. In type class parlance, "There is an instance of the JsonFormat type class for String." We can use it like this:
-
-    import spray.json._
-    import DefaultJsonProtocol._
+<pre>
+import spray.json._
+import DefaultJsonProtocol._
  
-    val pony = "Fluttershy"
-    val json = pony.{{"toJson"| sc: "toJson""}}
-   
+val pony = "Fluttershy"
+val json = pony.{{"toJson"| sc: "toJson""}}
+</pre>
  The implicits resolve to:
- 
-    val pony = "Fluttershy"
-    val json = new {{"PimpedAny"| sc: "pimpedAny""}}[String](pony).{{"toJson"| sc: "toJson""}}({{"DefaultJsonProtocol.StringJsonFormat"| sc: "implicitparam""}})
-  
+<pre> 
+val pony = "Fluttershy"
+val json = new {{"PimpedAny"| sc: "pimpedAny""}}\[String\](pony).{{"toJson"| sc: "toJson""}}({{"DefaultJsonProtocol.StringJsonFormat"| sc: "implicitparam""}})
+</pre>
+
 This desugared syntax looks like serialization in a language without implicits.
   
 This use of the type class pattern adds a whole feature (serialization) to any class we want, in a generic way,
@@ -113,20 +114,24 @@ This is the killer feature of the type class pattern: it composes.
 One {{"generic definition of JsonFormat[List[T]]"|sc: "implicitdef"}} means a List of any JsonFormat-able T is also JsonFormat-able. T could be String, Int, Long, MyClass -- you name it, if we can format it, we can also format Lists of it.
 Here's the trick: instead of an {{"implicit val"| sc: "implicitparam"}} for JsonFormat of List, there is an {{"implicit def"|sc: "implicitdef"}} in DefaultJsonFormat:
 
+<pre>
     {{"implicit def"|sc: "implicitdef"}} listFormat[{{"T : JsonFormat"| sc: "contextbound"}}] = new RootJsonFormat[List[T]] {
       def write(list: List[T]) = ..
       def read(value: JsValue): List[T] = ..
     }
+</pre>
 
 What is this doing? First, we have to understand some new syntax: inside the {{"type parameter, there is a colon, followed by a type class"| sc: "contextbound"}}. 
 This is called [Context Bounds](http://docs.scala-lang.org/tutorials/FAQ/context-and-view-bounds.html) (good luck finding the documentation without knowing this special name).
 This is shorthand for "{{"a type T such that there exists in the magic hat a JsonFormat[T]"| sc: "contextbound"}}]".
 The context-bounds notation above expands to:
 
+<pre>
     implicit def listFormat[{{"T"| sc: "contextbound"}}]({{"implicit _ : JsonFormat[T]"| sc: "contextbound"}}) = new RootJsonFormat[List[T]] {
       def write(list: List[T]) = ..
       def read(value: JsValue): List[T] = ..
     }
+</pre>
 
 This guarantees that the write function inside listFormat will be able to call {{".toJson"| sc: "toJson""}} on the elements in the List.
 
@@ -175,7 +180,7 @@ That much magic also means it's hard to understand.
 you'll often want to create new type class instances, such as JsonFormat[MyClass]. Other times you need to find the right ones to import.
 Either way, familiarity with the pattern is essential when using spray-json and many other libraries.
 
-spray-routing[WHICH IS WHAT] uses this pattern for a lot of things, including returning data, and to avoid some pitfalls of method overloading.
+spray-routing, a library used to write RESTful services, uses this pattern for a lot of things, including returning data, and to avoid some pitfalls of method overloading.
 They call it the 'magnet pattern' and try to get you to read [a post much, much longer than this one](http://spray.io/blog/2012-12-13-the-magnet-pattern/).
 Ultimately it's the same pattern, used for different properties.
 
